@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>For You 💖</title>
+  <meta name="description" content="A little interactive gallery for my beautiful GF ." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#ffe6f0; /* soft pink */
+      --bg2:#eef9ff; /* soft blue */
+      --ink:#1a1a1a; 
+      --accent:#ff6b9e;
+      --card:#ffffff;
+      --shadow:0 10px 25px rgba(0,0,0,.10);
+      --radius:22px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--ink);
+      background: radial-gradient(1200px 800px at 10% 10%, var(--bg1), transparent),
+                  radial-gradient(1200px 800px at 90% 20%, var(--bg2), transparent),
+                  #fff;
+      overflow-x:hidden;
+    }
+
+    header{
+      padding:40px 20px 10px; text-align:center;
+    }
+    .title{
+      font-weight:800; font-size:clamp(28px, 5vw, 44px);
+      letter-spacing:.5px; margin:0 0 8px; color:#ff367d;
+    }
+    .subtitle{margin:0; opacity:.7}
+
+    .gallery{
+      width:min(1100px, 92vw); margin:26px auto 60px; display:grid; gap:18px;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    }
+
+    /* Card */
+    .card{ perspective:1000px; position:relative; height:300px; border-radius:var(--radius); }
+    .inner{
+      position:relative; width:100%; height:100%; border-radius:inherit; box-shadow:var(--shadow);
+      transform-style:preserve-3d; transition:transform .8s ease;
+    }
+    .card:focus-within .inner, .card:hover .inner{transform:rotateY(180deg)}
+
+    .front, .back{
+      position:absolute; inset:0; border-radius:inherit; backface-visibility:hidden; overflow:hidden;
+    }
+    .front{
+      background:var(--card) center/cover no-repeat; display:flex; align-items:flex-end; justify-content:flex-start;
+      border:1px solid rgba(0,0,0,.06);
+    }
+    .front .label{
+      background:rgba(255,255,255,.86); backdrop-filter:saturate(1.2) blur(4px);
+      margin:12px; padding:8px 12px; border-radius:14px; font-weight:600; font-size:14px;
+      box-shadow:0 6px 16px rgba(0,0,0,.08);
+    }
+    .back{
+      transform:rotateY(180deg);
+      display:flex; align-items:center; justify-content:center; text-align:center; padding:22px;
+      background:linear-gradient(135deg, #fff, #fff5f8);
+      border:1px solid rgba(0,0,0,.06);
+    }
+    .back p{margin:0; font-size:clamp(15px, 2.6vw, 18px); line-height:1.4}
+
+    /* Lightbox */
+    .lightbox{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; padding:20px;}
+    .lightbox[open]{display:flex}
+    .lightbox .content{background:#fff; border-radius:20px; max-width:min(900px, 92vw); width:100%; overflow:hidden; box-shadow:var(--shadow)}
+    .lightbox header{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #eee}
+    .lightbox h3{margin:0; font-size:18px}
+    .lightbox button{border:0; background:#f5f5f5; padding:8px 12px; border-radius:10px; cursor:pointer}
+    .lightbox figure{margin:0}
+    .lightbox img{display:block; width:100%; height:auto}
+    .lightbox figcaption{padding:10px 14px; font-size:14px; color:#444}
+
+    /* Floating hearts (fun, subtle) */
+    .hearts{position:fixed; inset:0; pointer-events:none; overflow:hidden}
+    .hearts span{position:absolute; font-size:16px; opacity:.6; animation:float var(--dur) linear infinite; filter:drop-shadow(0 1px 0 rgba(0,0,0,.1))}
+    @keyframes float{from{transform:translateY(100vh)} to{transform:translateY(-10vh)}}
+
+    footer{ text-align:center; padding:30px 10px 60px; opacity:.7 }
+
+    /* Accessibility: reduce motion */
+    @media (prefers-reduced-motion: reduce){
+      .inner{transition:none}
+      .card:hover .inner, .card:focus-within .inner{transform:none}
+      .hearts{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="hearts" aria-hidden="true" id="hearts"></div>
+
+  <header>
+    <h1 class="title">To My Amazing Beautiful Girlfriend 💞</h1>
+    <p class="subtitle">Hover a photo to flip it. Click to see it larger.</p>
+  </header>
+
+  <main class="gallery" id="gallery" aria-live="polite"></main>
+
+  <!-- Lightbox Dialog -->
+  <dialog class="lightbox" id="lightbox" aria-label="Photo viewer">
+    <div class="content">
+      <header>
+        <h3 id="lightboxTitle">You + Me</h3>
+        <button type="button" id="closeBtn" aria-label="Close viewer">Close</button>
+      </header>
+      <figure>
+        <img id="lightboxImg" alt="" />
+        <figcaption id="lightboxCaption"></figcaption>
+      </figure>
+    </div>
+  </dialog>
+
+  <footer>
+    The most beautiful girl ever ✨
+  </footer>
+
+  <script>
+    // === EDIT THIS LIST WITH YOUR PHOTOS & MESSAGES ===
+    // Place your V1–V5.jpg photos inside an "images" folder next to index.html
+    const CARDS = [
+      {
+        src: "images/V1.jpg",
+        alt: "My favorite photo of you",
+        label: "Most Beautiful",
+        message: "I remember taking this pic on facetime, you thought you were ugly, I thought you were the most beautiful"
+      },
+      {
+        src: "images/V2.jpg",
+        alt: "I mean look at you, wow",
+        label: "Sexiest of all time",
+        message: "Ive never seen a girl as beautiful as you, lowkey starred at that pic for too long"
+      },
+      {
+        src: "images/V3.jpg",
+        alt: "Happy 5 MONTHS WOOO",
+        label: "Prettiest",
+        message: "This dress had me speachless, one of my favorites."
+      },
+      {
+        src: "images/V4.jpg",
+        alt: "All black on you has me weak",
+        label: "Most Intelligent",
+        message: "This was the pic I showed everyone when I first started talking about you, I was like look at her, shes perfect"
+      },
+      {
+        src: "images/V5.jpg",
+        alt: "Prettiest eyes ever",
+        label: "Cutest",
+        message: "Beauty aside, personality aside, my favourite thing about you is your eyes, the first thing I noticed and the thing I love the most"
+      },
+    ];
+
+    // === Build Gallery ===
+    const gallery = document.getElementById('gallery');
+
+    CARDS.forEach(({src, alt, label, message}, idx) => {
+      const card = document.createElement('article');
+      card.className = 'card';
+      card.tabIndex = 0;
+      card.setAttribute('aria-label', `Photo ${idx+1}: ${alt}`);
+
+      const inner = document.createElement('div');
+      inner.className = 'inner';
+
+      const front = document.createElement('div');
+      front.className = 'front';
+      front.style.backgroundImage = `url('${src}')`;
+      const chip = document.createElement('div');
+      chip.className = 'label';
+      chip.textContent = label || 'You';
+      front.appendChild(chip);
+
+      const back = document.createElement('div');
+      back.className = 'back';
+      const p = document.createElement('p');
+      p.textContent = message || 'You are loved.';
+      back.appendChild(p);
+
+      inner.appendChild(front);
+      inner.appendChild(back);
+      card.appendChild(inner);
+
+      // Click -> lightbox
+      card.addEventListener('click', () => openLightbox(src, alt, message));
+      card.addEventListener('keyup', (e) => { if(e.key === 'Enter') openLightbox(src, alt, message); });
+
+      gallery.appendChild(card);
+    });
+
+    // === Lightbox ===
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxCaption = document.getElementById('lightboxCaption');
+    const lightboxTitle = document.getElementById('lightboxTitle');
+    const closeBtn = document.getElementById('closeBtn');
+
+    function openLightbox(src, alt, caption){
+      lightboxImg.src = src; lightboxImg.alt = alt || '';
+      lightboxCaption.textContent = caption || '';
+      lightboxTitle.textContent = 'For You';
+      if(typeof lightbox.showModal === 'function'){
+        lightbox.showModal();
+      } else {
+        lightbox.setAttribute('open','');
+      }
+    }
+
+    function closeLightbox(){
+      lightboxImg.src = '';
+      if(lightbox.close) lightbox.close(); else lightbox.removeAttribute('open');
+    }
+
+    closeBtn.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e)=>{ if(e.target === lightbox) closeLightbox(); });
+    document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && lightbox.open) closeLightbox(); });
+
+    // === Floating Hearts ===
+    const hearts = document.getElementById('hearts');
+    const HEARTS_COUNT = 18;
+    for(let i=0;i<HEARTS_COUNT;i++){
+      const s = document.createElement('span');
+      s.textContent = Math.random() > .5 ? '💖' : '💘';
+      const left = Math.random()*100;
+      const delay = Math.random()*-20; // negative to stagger immediately
+      const size = 14 + Math.round(Math.random()*18);
+      const dur = 14 + Math.round(Math.random()*10);
+      s.style.left = left + 'vw';
+      s.style.fontSize = size + 'px';
+      s.style.animationDuration = dur + 's';
+      s.style.animationDelay = delay + 's';
+      hearts.appendChild(s);
+    }
+  </script>
+</body>
+</html>
