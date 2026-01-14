@@ -33,7 +33,9 @@ local ANTI_SPAM_COOLDOWN = 0.3
 local playerCooldowns = {}
 
 -- Loot Table Configuration
-local LootTable = require(script.Parent.LootSystem)
+local ServerScriptService = game:GetService("ServerScriptService")
+local LootTable = require(ServerScriptService:WaitForChild("LootSystem"))
+local PlayerData = require(ServerScriptService:WaitForChild("PlayerDataManager"))
 
 -- Terrain service
 local Terrain = workspace.Terrain
@@ -107,7 +109,6 @@ local function spawnLoot(position, player)
 	end
 
 	-- Update player inventory (if using custom inventory system)
-	local PlayerData = require(script.Parent.PlayerDataManager)
 	PlayerData.AddItem(player, loot)
 
 	-- Create visual loot pickup
